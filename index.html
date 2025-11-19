@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Audio Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+    <style>
+        :root { 
+            --bg-dark: #1e1e1e; 
+            --bg-panel: #2d2d2d; 
+            --text-color: #e0e0e0; 
+            --accent: #00bcd4;
+            --selection: rgba(255, 255, 255, 0.2);
+        }
+        * { 
+            box-sizing: border-box; 
+        }
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg-dark); 
+            color: var(--text-color); 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        .menubar { 
+            background: #333; 
+            padding: 5px 10px; 
+            display: flex; 
+            gap: 15px; 
+            border-bottom: 1px solid #444; 
+            font-size: 14px; 
+        }
+        .menu-item { 
+            cursor: pointer; 
+            position: relative; 
+            padding: 5px 10px; 
+        }
+        .menu-item:hover { 
+            color: white; 
+            background: #444; 
+        }
+        .pk_menu { 
+            display: none; 
+            position: absolute; 
+            top: 100%; 
+            left: 0; 
+            background: #f0f0f0; 
+            min-width: 200px; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5); 
+            z-index: 100; 
+            border: 1px solid #ccc; 
+            max-height: 500px; 
+            overflow-y: auto; 
+        }
+        .pk_opt { 
+            width: 100%; 
+            text-align: left; 
+            background: none; 
+            border: none; 
+            padding: 10px 14px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            color: black; 
+            border-bottom: 1px solid #ddd; 
+        }
+        .pk_opt:hover { 
+            background: #ddd; 
+        }
+        .toolbar { 
+            padding: 10px; 
+            background: var(--bg-panel); 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            border-bottom: 1px solid #444; 
+            flex-wrap: wrap; 
+        }
+        button.btn-tool { 
+            background: #444; 
+            border: 1px solid #555; 
+            color: white; 
+            padding: 6px 12px; 
+            cursor: pointer; 
+            border-radius: 3px; 
+            font-size: 13px; 
+        }
+        button.btn-tool:hover { 
+            background: #555; 
+        }
+        .time-display { 
+            font-family: monospace; 
+            font-size: 24px; 
+            background: black; 
+            color: var(--accent); 
+            padding: 5px 10px; 
+            border: 1px solid #555; 
+        }
+        .editor-wrapper { 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+        .timeline { 
+            height: 40px; 
+            background: #2a2a2a; 
+            border-bottom: 1px solid #444; 
+            position: relative;
+            overflow: hidden;
+        }
+        .editor-container { 
+            flex-grow: 1; 
+            position: relative; 
+            overflow-x: auto; 
+            overflow-y: hidden;
+            background: black; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+        }
+        .waveform-scroll { 
+            position: relative; 
+            height: 100%; 
+        }
+        .channel-wrapper { 
+            position: relative; 
+            height: 45%; 
+            min-width: 100%; 
+            border-bottom: 1px solid #444; 
+            margin-bottom: 5px; 
+        }
+        .channel-label { 
+            position: absolute; 
+            left: 5px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            color: #006666; 
+            font-weight: bold; 
+            pointer-events: none; 
+            z-index: 1; 
+        }
+        canvas { 
+            display: block; 
+            width: 100%; 
+            height: 100%; 
+        }
+        .selection-overlay { 
+            position: absolute; 
+            top: 0; 
+            bottom: 0; 
+            background: var(--selection); 
+            pointer-events: none; 
+            display: none; 
+            border-left: 1px solid white; 
+            border-right: 1px solid white; 
+        }
+        .playhead { 
+            position: absolute; 
+            top: 0; 
+            bottom: 0; 
+            width: 2px; 
+            background: red; 
+            pointer-events: none; 
+            display: none; 
+            z-index: 10; 
+        }
+        #loading { 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: rgba(0,0,0,0.9); 
+            padding: 20px 40px; 
+            border-radius: 8px; 
+            display: none; 
+            z-index: 999; 
+        }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.7); 
+            z-index: 1000; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        .modal-content { 
+            background: var(--bg-panel); 
+            padding: 25px; 
+            border-radius: 8px; 
+            width: 350px; 
+        }
+        .modal-buttons { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 20px; 
+            justify-content: flex-end; 
+        }
+        input[type="range"] { 
+            width: 100%; 
+            margin: 10px 0; 
+        }
+        .ruler-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .time-marker {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-left: 1px solid #666;
+        }
+        .time-label {
+            position: absolute;
+            top: 2px;
+            font-size: 10px;
+            color: #aaa;
+            font-family: monospace;
+            white-space: nowrap;
+            transform: translateX(-50%);
+        }
+        .time-marker.major {
+            border-left-width: 2px;
+            border-color: #888;
+        }
+        .time-marker.minor {
+            height: 50%;
+            top: 50%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="menubar">
+    <div class="menu-item" onclick="document.getElementById('fileInput').click()">Open
+        <input type="file" id="fileInput" accept="audio/*, video/mp4" style="display:none;">
+    </div>
+    <div class="menu-item" id="effectsMenuBtn">Effects
+        <div class="pk_menu" id="effectsDropdown">
+            <button class="pk_opt" data-effect="gio">Gio Algoritmo</button>
+            <button class="pk_opt" data-effect="upsdowns">Ups and Downs AI</button>
+            <button class="pk_opt" data-effect="smartgain">Smart Gain AI</button>
+            <div style="border-bottom:1px solid #ccc; margin: 5px 0;"></div>
+            <button class="pk_opt" data-effect="gain">Gain (dB)</button>
+            <button class="pk_opt" data-effect="fadein">Fade In</button>
+            <button class="pk_opt" data-effect="fadeout">Fade Out</button>
+            <button class="pk_opt" data-effect="normalize">Normalize</button>
+            <button class="pk_opt" data-effect="invert">Invert Phase</button>
+            <button class="pk_opt" data-effect="reverse">Reverse</button>
+            <button class="pk_opt" data-effect="hardlimiter">Hard Limiter</button>
+            <button class="pk_opt" data-effect="distortion">Distortion</button>
+            <button class="pk_opt" data-effect="removesilence">Remove Silence</button>
+        </div>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="time-display" id="timeDisplay">00:00:000</div>
+    <button class="btn-tool" id="btnPlay">Play</button>
+    <button class="btn-tool" id="btnStop">Stop</button>
+    <button class="btn-tool" id="btnCut">Cut</button>
+    <button class="btn-tool" id="btnCopy">Copy</button>
+    <button class="btn-tool" id="btnPaste">Paste</button>
+    <button class="btn-tool" id="btnDelete">Delete</button>
+    <button class="btn-tool" id="btnSelectAll">Select All</button>
+    <button class="btn-tool" id="btnDeselectAll">Deselect</button>
+    <button class="btn-tool" id="btnUndo">Undo</button>
+    <button class="btn-tool" id="btnRedo">Redo</button>
+    <button class="btn-tool" id="btnZoomOut">-</button>
+    <span id="zoomLevel" style="font-size: 12px;">100%</span>
+    <button class="btn-tool" id="btnZoomIn">+</button>
+    <button class="btn-tool" id="btnZoomFit">Fit</button>
+    <button class="btn-tool" id="btnRecordMic">Record</button>
+    <button class="btn-tool" id="btnStopRec" style="display:none">Stop Rec</button>
+    <span style="flex-grow:1"></span>
+    <button class="btn-tool" id="btnDownloadMp3" style="background: #006400;">Save MP3</button>
+</div>
+
+<div class="editor-wrapper">
+    <div class="timeline">
+        <div class="ruler-container" id="rulerContainer"></div>
+    </div>
+    <div class="editor-container" id="editorContainer">
+        <div class="waveform-scroll" id="waveformScroll">
+            <div class="channel-wrapper"><span class="channel-label">L</span><canvas id="canvasL"></canvas><div class="selection-overlay" id="selL"></div></div>
+            <div class="channel-wrapper"><span class="channel-label">R</span><canvas id="canvasR"></canvas><div class="selection-overlay" id="selR"></div></div>
+            <div class="playhead" id="playhead"></div>
+        </div>
+    </div>
+</div>
+
+<div id="loading">Processing...</div>
+
+<div class="modal" id="effectModal">
+    <div class="modal-content">
+        <h3 id="modalTitle" style="margin-top:0">Parameters</h3>
+        <div id="modalParameters"></div>
+        <div class="modal-buttons">
+            <button class="btn-tool" onclick="closeModalFunc()">Cancel</button>
+            <button class="btn-tool" style="background: #006400;" onclick="applyModalEffectFunc()">Apply</button>
+        </div>
+    </div>
+</div>
+
+<script> 
+
+
+class AudioEffects {
+    static applyGain(buffer, range, db) {
+        const amount = Math.pow(10, db / 20);
+        this.process(buffer, range, (val) => Math.max(-1, Math.min(1, val * amount)));
+    }
+
+    static applyFadeIn(buffer, range) {
+        const len = range.end - range.start;
+        for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+            const data = buffer.getChannelData(ch);
+            for (let i = 0; i < len; i++) {
+                data[range.start + i] *= (i / len);
+            }
+        }
+    }
+
+    static applyFadeOut(buffer, range) {
+        const len = range.end - range.start;
+        for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+            const data = buffer.getChannelData(ch);
+            for (let i = 0; i < len; i++) {
+                data[range.start + i] *= (1 - (i / len));
+            }
+        }
+    }
+
+    static applyNormalize(buffer, range) {
+        let max = 0;
+        for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+            const data = buffer.getChannelData(ch);
+            for (let i = range.start; i < range.end; i++) {
+                if (Math.abs(data[i]) > max) max = Math.abs(data[i]);
+            }
+        }
+        if (max > 0 && max < 1) {
+            const factor = 0.98 / max;
+            this.process(buffer, range, (val) => val * factor);
+        }
+    }
+
+    static applyReverse(buffer, range) {
+        for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+            const data = buffer.getChannelData(ch);
+            const segment = data.slice(range.start, range.end).reverse();
+            data.set(segment, range.start);
+        }
+    }
+
+    static applyInvert(buffer, range) {
+        this.process(buffer, range, (val) => -val);
+    }
+
+    static applyHardLimiter(buffer, range, threshold) {
+        this.process(buffer, range, (val) => {
+            if (val > threshold) return threshold;
+            if (val < -threshold) return -threshold;
+            return val;
+        });
+    }
+
+    static applyDistortion(buffer, range, amount) {
+        const k = amount;
+        this.process(buffer, range, (x) => (1 + k) * x / (1 + k * Math.abs(x)));
+    }
+
+    static applyUpsDownsAI(buffer, range, threshold) {
+        this.applyHardLimiter(buffer, range, threshold);
+    }
+
+    static applySmartGainAI(buffer, range, targetLevel) {
+        const sampleRate = buffer.sampleRate;
+        const segmentSize = Math.floor(0.1 * sampleRate);
+        
+        for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+            const data = buffer.getChannelData(ch);
+            let start = range.start;
+            let end = range.end;
+
+            for (let i = start; i < end; i += segmentSize) {
+                let segmentEnd = Math.min(i + segmentSize, end);
+                
+                let maxPeak = 0;
+                for (let j = i; j < segmentEnd; j++) {
+                    let val = Math.abs(data[j]);
+                    if (val > maxPeak) maxPeak = val;
+                }
+
+                let gain = 1.0;
+                if (maxPeak > 0.001) {
+                    gain = targetLevel / maxPeak;
+                }
+
+                if (gain > 6.0) gain = 6.0; 
+                if (gain < 0.1) gain = 0.1; 
+
+                for (let j = i; j < segmentEnd; j++) {
+                    let newVal = data[j] * gain;
+                    data[j] = Math.max(-1, Math.min(1, newVal));
+                }
+            }
+        }
+    }
+
+    static applyGioAlgoritmo(buffer, range) {
+ 
+     for (var i =0; i<4; i++){
+        AudioEffects.applyUpsDownsAI(buffer, range, 0.2);
+     AudioEffects.applyGain(buffer, range, 2);
+     }
+      
+    }
+
+    static removeSilence(audioContext, buffer, threshold, minDuration) {
+        const sampleRate = buffer.sampleRate;
+        const minSamples = minDuration * sampleRate;
+        const regions = [];
+        let silenceStart = -1;
+        let inSilence = false;
+
+        for (let i = 0; i < buffer.length; i++) {
+            let isSilent = true;
+            for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+                if (Math.abs(buffer.getChannelData(ch)[i]) > threshold) {
+                    isSilent = false;
+                    break;
+                }
+            }
+            if (isSilent && !inSilence) {
+                silenceStart = i;
+                inSilence = true;
+            } else if (!isSilent && inSilence) {
+                if ((i - silenceStart) >= minSamples) {
+                    regions.push({ start: silenceStart, end: i });
+                }
+                inSilence = false;
+            }
+        }
+
+        if (regions.length === 0) return buffer;
+
+        let newLen = buffer.length;
+        regions.forEach(r => newLen -= (r.end - r.start));
+        
+        const newBuffer = audioContext.createBuffer(buffer.numberOfChannels, newLen, sampleRate);
+        let writePos = 0;
+        let readPos = 0;
+
+        regions.forEach(r => {
+            const len = r.start - readPos;
+            for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+                newBuffer.getChannelData(ch).set(buffer.getChannelData(ch).subarray(readPos, r.start), writePos);
+            }
+            writePos += len;
+            readPos = r.end;
+        });
+
+        for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+            newBuffer.getChannelData(ch).set(buffer.getChannelData(ch).subarray(readPos), writePos);
+        }
+        return newBuffer;
+    }
+
+    static process(buffer, range, callback) {
+        for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+            const data = buffer.getChannelData(ch);
+            for (let i = range.start; i < range.end; i++) {
+                data[i] = callback(data[i]);
+            }
+        }
+    }
+}
+
+class BufferManager {
+    constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.buffer = null;
+        this.history = [];
+        this.idx = -1;
+        this.maxHistory = 40;
+    }
+    set(buf, push = true) {
+        this.buffer = buf;
+        if (push) this.pushState();
+    }
+    pushState() {
+        if (!this.buffer) return;
+        if (this.idx < this.history.length - 1) this.history = this.history.slice(0, this.idx + 1);
+        this.history.push(this.clone(this.buffer));
+        if (this.history.length > this.maxHistory) this.history.shift(); else this.idx++;
+    }
+    undo() { 
+        if (this.idx > 0) { 
+            this.idx--; 
+            this.buffer = this.clone(this.history[this.idx]); 
+            return true; 
+        } 
+        return false; 
+    }
+    redo() { 
+        if (this.idx < this.history.length - 1) { 
+            this.idx++; 
+            this.buffer = this.clone(this.history[this.idx]); 
+            return true; 
+        } 
+        return false; 
+    }
+    clone(buf) {
+        const res = this.ctx.createBuffer(buf.numberOfChannels, buf.length, buf.sampleRate);
+        for (let i = 0; i < buf.numberOfChannels; i++) res.getChannelData(i).set(buf.getChannelData(i));
+        return res;
+    }
+}
+
+class Renderer {
+    constructor(cL, cR, rulerContainer) { 
+        this.cL = cL; 
+        this.cR = cR; 
+        this.rulerContainer = rulerContainer;
+        this.zoom = 1.0; 
+    }
+    draw(buf) {
+        if (!buf) return;
+        this.drawCh(buf.getChannelData(0), this.cL);
+        this.drawCh(buf.numberOfChannels > 1 ? buf.getChannelData(1) : buf.getChannelData(0), this.cR);
+        this.drawRuler(buf.duration);
+    }
+    drawCh(data, cvs) {
+        const w = Math.floor(cvs.parentElement.parentElement.clientWidth * this.zoom);
+        const h = cvs.parentElement.clientHeight;
+        cvs.width = w; 
+        cvs.height = h; 
+        cvs.style.width = w + 'px';
+        const ctx = cvs.getContext('2d');
+        ctx.fillStyle = 'black'; 
+        ctx.fillRect(0, 0, w, h);
+        ctx.beginPath(); 
+        ctx.strokeStyle = '#00bcd4';
+        const step = Math.max(1, Math.ceil(data.length / w));
+        const amp = h / 2;
+        
+        for (let i = 0; i < w; i++) {
+            let min = 0, max = 0;
+            const startIdx = i * step;
+            const endIdx = Math.min(startIdx + step, data.length);
+            
+            for (let j = startIdx; j < endIdx; j++) {
+                const v = data[j] || 0;
+                if (v < min) min = v; 
+                if (v > max) max = v;
+            }
+            
+            const y1 = (1 - min) * amp;
+            const y2 = (1 - max) * amp;
+            
+            ctx.moveTo(i, y1); 
+            ctx.lineTo(i, y2);
+        }
+        ctx.stroke();
+        
+        ctx.strokeStyle = '#333'; 
+        ctx.beginPath(); 
+        ctx.moveTo(0, amp); 
+        ctx.lineTo(w, amp); 
+        ctx.stroke();
+    }
+    drawRuler(dur) {
+        this.rulerContainer.innerHTML = '';
+        const containerWidth = this.rulerContainer.parentElement.clientWidth;
+        const w = Math.floor(containerWidth * this.zoom);
+        this.rulerContainer.style.width = w + 'px';
+        
+        const ppt = w / dur;
+        let major, minor;
+        
+        if (ppt >= 800) { major = 0.1; minor = 0.01; }
+        else if (ppt >= 300) { major = 0.5; minor = 0.1; }
+        else if (ppt >= 100) { major = 1; minor = 0.2; }
+        else if (ppt >= 50) { major = 2; minor = 0.5; }
+        else if (ppt >= 20) { major = 5; minor = 1; }
+        else if (ppt >= 8) { major = 10; minor = 2; }
+        else if (ppt >= 3) { major = 30; minor = 10; }
+        else { major = 60; minor = 30; }
+        
+        for (let t = 0; t <= dur; t += minor) {
+            const time = Math.round(t / minor) * minor;
+            if (time > dur) break;
+            const x = (time / dur) * w;
+            const isMajor = Math.abs(time % major) < (minor / 2);
+            
+            const marker = document.createElement('div');
+            marker.className = isMajor ? 'time-marker major' : 'time-marker minor';
+            marker.style.left = x + 'px';
+            
+            if (isMajor) {
+                const label = document.createElement('div');
+                label.className = 'time-label';
+                label.style.left = x + 'px';
+                const m = Math.floor(time / 60);
+                const s = Math.floor(time % 60);
+                const ms = Math.floor((time % 1) * 100);
+                
+                if (major < 1) {
+                    label.textContent = `${m}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+                } else {
+                    label.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+                }
+                this.rulerContainer.appendChild(label);
+            }
+            this.rulerContainer.appendChild(marker);
+        }
+    }
+}
+
+class Selection {
+    constructor(ct, oL, oR) { 
+        this.ct = ct; 
+        this.oL = oL; 
+        this.oR = oR; 
+        this.s = 0; 
+        this.e = 0; 
+        this.active = false; 
+        this.dur = 0; 
+    }
+    setDur(d) { 
+        this.dur = d; 
+    }
+    has() { 
+        return Math.abs(this.e - this.s) > 0.001; 
+    }
+    clear() { 
+        this.s = 0; 
+        this.e = 0; 
+        this.ui(); 
+    }
+    range(buf) {
+        const s = Math.floor(Math.min(this.s, this.e) * buf.sampleRate);
+        const e = Math.floor(Math.max(this.s, this.e) * buf.sampleRate);
+        return { start: Math.max(0, s), end: Math.min(buf.length, e) };
+    }
+    ui() {
+        if (!this.dur) return;
+        const s = Math.min(this.s, this.e);
+        const e = Math.max(this.s, this.e);
+        const L = (s / this.dur) * 100;
+        const W = ((e - s) / this.dur) * 100;
+        this.oL.style.display = this.oR.style.display = W <= 0 ? 'none' : 'block';
+        this.oL.style.left = this.oR.style.left = L + '%';
+        this.oL.style.width = this.oR.style.width = W + '%';
+    }
+}
+
+class MP3Exp {
+    save(buf, name) {
+        const enc = new lamejs.Mp3Encoder(buf.numberOfChannels, buf.sampleRate, 128);
+        const d = [];
+        const L = buf.getChannelData(0);
+        const R = buf.numberOfChannels > 1 ? buf.getChannelData(1) : L;
+        const cvt = (arr) => { 
+            const r = new Int16Array(arr.length); 
+            for (let i = 0; i < arr.length; i++) r[i] = Math.max(-1, Math.min(1, arr[i])) * (arr[i] < 0 ? 0x8000 : 0x7FFF); 
+            return r; 
+        };
+        const blockSize = 11520;
+        for (let i = 0; i < buf.length; i += blockSize) {
+            const l = cvt(L.subarray(i, i + blockSize));
+            const r = cvt(R.subarray(i, i + blockSize));
+            const mp3 = buf.numberOfChannels === 1 ? enc.encodeBuffer(l) : enc.encodeBuffer(l, r);
+            if (mp3.length) d.push(mp3);
+        }
+        const end = enc.flush(); 
+        if (end.length) d.push(end);
+        const b = new Blob(d, {type: 'audio/mp3'});
+        const url = URL.createObjectURL(b);
+        const a = document.createElement('a');
+        a.href = url; 
+        a.download = name; 
+        a.click();
+    }
+}
+
+class Recorder {
+    constructor(ctx) {
+        this.ctx = ctx;
+        this.stream = null;
+        this.recorder = null;
+        this.chunks = [];
+        this.recording = false;
+    }
+    async start() {
+        try {
+            this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.recorder = new MediaRecorder(this.stream);
+            this.chunks = [];
+            this.recorder.ondataavailable = e => this.chunks.push(e.data);
+            this.recorder.start();
+            this.recording = true;
+        } catch(e) { 
+            alert('Error accessing microphone'); 
+        }
+    }
+    async stop() {
+        if (!this.recorder || !this.recording) return null;
+        return new Promise(resolve => {
+            this.recorder.onstop = async () => {
+                const blob = new Blob(this.chunks, { type: 'audio/webm' });
+                const buf = await this.ctx.decodeAudioData(await blob.arrayBuffer());
+                this.stream.getTracks().forEach(t => t.stop());
+                this.recording = false;
+                resolve(buf);
+            };
+            this.recorder.stop();
+        });
+    }
+}
+
+class AppClass {
+    constructor() {
+        this.bm = new BufferManager();
+        this.rend = new Renderer(
+            document.getElementById('canvasL'), 
+            document.getElementById('canvasR'),
+            document.getElementById('rulerContainer')
+        );
+        this.sel = new Selection(document.getElementById('waveformScroll'), document.getElementById('selL'), document.getElementById('selR'));
+        this.clip = null;
+        this.src = null;
+        this.rec = new Recorder(this.bm.ctx);
+        this.currEff = null;
+        this.bind();
+    }
+
+    bind() {
+        document.getElementById('fileInput').onchange = e => this.load(e);
+        document.getElementById('btnPlay').onclick = () => this.play();
+        document.getElementById('btnStop').onclick = () => this.stop();
+        document.getElementById('btnZoomIn').onclick = () => this.zoom(1.5);
+        document.getElementById('btnZoomOut').onclick = () => this.zoom(0.6);
+        document.getElementById('btnZoomFit').onclick =() => { this.rend.zoom = 1; this.redraw(); };
+        document.getElementById('btnUndo').onclick = () => { if (this.bm.undo()) this.redraw(); };
+        document.getElementById('btnRedo').onclick = () => { if (this.bm.redo()) this.redraw(); };
+        document.getElementById('btnCut').onclick = () => this.edit('cut');
+        document.getElementById('btnCopy').onclick = () => this.edit('copy');
+        document.getElementById('btnPaste').onclick = () => this.edit('paste');
+        document.getElementById('btnDelete').onclick = () => this.edit('delete');
+        document.getElementById('btnSelectAll').onclick = () => this.selectAll();
+        document.getElementById('btnDeselectAll').onclick = () => this.sel.clear();
+        document.getElementById('btnRecordMic').onclick = () => this.startRec();
+        document.getElementById('btnStopRec').onclick = () => this.stopRec();
+        document.getElementById('btnDownloadMp3').onclick = () => { if (this.bm.buffer) new MP3Exp().save(this.bm.buffer, 'audio.mp3'); };
+        
+        document.getElementById('effectsMenuBtn').onclick = (e) => {
+            e.stopPropagation();
+            const d = document.getElementById('effectsDropdown'); 
+            d.style.display = d.style.display == 'block' ? 'none' : 'block';
+        };
+        document.addEventListener('click', () => document.getElementById('effectsDropdown').style.display = 'none');
+        document.querySelectorAll('[data-effect]').forEach(b => b.onclick = (e) => this.reqEffect(e.target.dataset.effect));
+
+        document.body.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; };
+        document.body.ondrop = async e => {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('audio/') || file.type === 'video/mp4') {
+                    this.loadFile(file);
+                }
+            }
+        };
+
+        const c = this.sel.ct;
+        c.onmousedown = e => {
+            if (!this.bm.buffer) return;
+            this.sel.active = true;
+            const r = c.getBoundingClientRect();
+            const t = this.bm.buffer.duration;
+            this.sel.s = this.sel.e = Math.max(0, Math.min(t, ((e.clientX - r.left + document.getElementById('editorContainer').scrollLeft) / c.clientWidth) * t));
+            this.sel.ui();
+        };
+        window.onmousemove = e => {
+            if (this.sel.active && this.bm.buffer) {
+                const r = c.getBoundingClientRect();
+                const t = this.bm.buffer.duration;
+                let x = e.clientX - r.left + document.getElementById('editorContainer').scrollLeft;
+                this.sel.e = Math.max(0, Math.min(t, (x / c.clientWidth) * t));
+                this.sel.ui(); 
+                this.time(this.sel.e);
+            }
+        };
+        window.onmouseup = () => this.sel.active = false;
+
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && e.key === 'z') { 
+                e.preventDefault(); 
+                if (this.bm.undo()) this.redraw(); 
+            }
+            if (e.ctrlKey && e.key === 'y') { 
+                e.preventDefault(); 
+                if (this.bm.redo()) this.redraw(); 
+            }
+            if (e.ctrlKey && e.key === 'c') { 
+                e.preventDefault(); 
+                this.edit('copy'); 
+            }
+            if (e.ctrlKey && e.key === 'v') { 
+                e.preventDefault(); 
+                this.edit('paste'); 
+            }
+            if (e.ctrlKey && e.key === 'x') { 
+                e.preventDefault(); 
+                this.edit('cut'); 
+            }
+            if (e.key === 'Delete') { 
+                e.preventDefault(); 
+                this.edit('delete'); 
+            }
+            if (e.ctrlKey && e.key === 'a') { 
+                e.preventDefault(); 
+                this.selectAll(); 
+            }
+        });
+
+        document.getElementById('editorContainer').addEventListener('wheel', e => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                this.zoom(e.deltaY < 0 ? 1.2 : 0.8);
+            }
+        });
+
+        document.getElementById('editorContainer').addEventListener('scroll', () => {
+            this.syncRulerScroll();
+        });
+    }
+
+    syncRulerScroll() {
+        const scrollLeft = document.getElementById('editorContainer').scrollLeft;
+        document.getElementById('rulerContainer').style.transform = `translateX(-${scrollLeft}px)`;
+    }
+
+    async loadFile(file) {
+        if (this.bm.buffer) {
+            const placeNext = confirm('Place this audio next to the current one?');
+            if (placeNext) {
+                const invertNew = confirm('Invert the new audio?');
+                document.getElementById('loading').style.display = 'block';
+                try {
+                    let newBuf = await this.bm.ctx.decodeAudioData(await file.arrayBuffer());
+                    
+                    if (invertNew) {
+                        for (let ch = 0; ch < newBuf.numberOfChannels; ch++) {
+                            const data = newBuf.getChannelData(ch);
+                            for (let i = 0; i < data.length; i++) {
+                                data[i] = -data[i];
+                            }
+                        }
+                    }
+                    
+                    const oldBuf = this.bm.buffer;
+                    const totalLen = oldBuf.length + newBuf.length;
+                    const combinedBuf = this.bm.ctx.createBuffer(
+                        Math.max(oldBuf.numberOfChannels, newBuf.numberOfChannels),
+                        totalLen,
+                        oldBuf.sampleRate
+                    );
+                    
+                    for (let ch = 0; ch < combinedBuf.numberOfChannels; ch++) {
+                        const combined = combinedBuf.getChannelData(ch);
+                        const oldCh = oldBuf.getChannelData(Math.min(ch, oldBuf.numberOfChannels - 1));
+                        const newCh = newBuf.getChannelData(Math.min(ch, newBuf.numberOfChannels - 1));
+                        combined.set(oldCh, 0);
+                        combined.set(newCh, oldBuf.length);
+                    }
+                    
+                    this.bm.set(combinedBuf);
+                    this.sel.setDur(combinedBuf.duration);
+                    this.redraw();
+                } catch(err) {
+                    alert('Error loading file');
+                }
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
+        }
+        
+        document.getElementById('loading').style.display = 'block';
+        try {
+            const buf = await this.bm.ctx.decodeAudioData(await file.arrayBuffer());
+            this.bm.set(buf); 
+            this.bm.history = [this.bm.clone(buf)]; 
+            this.bm.idx = 0;
+            this.sel.setDur(buf.duration); 
+            this.redraw();
+        } catch(err) { 
+            alert('Error loading file'); 
+        }
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    async load(e) {
+        if (!e.target.files[0]) return;
+        await this.loadFile(e.target.files[0]);
+    }
+
+    redraw() {
+        if (!this.bm.buffer) return;
+        this.sel.setDur(this.bm.buffer.duration);
+        this.rend.draw(this.bm.buffer);
+        this.sel.ui();
+        document.getElementById('zoomLevel').textContent = Math.round(this.rend.zoom * 100) + '%';
+        this.syncRulerScroll();
+    }
+
+    zoom(f) { 
+        this.rend.zoom *= f; 
+        this.redraw(); 
+    }
+
+    selectAll() {
+        if (!this.bm.buffer) return;
+        this.sel.s = 0;
+        this.sel.e = this.bm.buffer.duration;
+        this.sel.ui();
+    }
+
+    async startRec() {
+        await this.rec.start();
+        document.getElementById('btnRecordMic').style.display = 'none';
+        document.getElementById('btnStopRec').style.display = 'inline-block';
+    }
+
+    async stopRec() {
+        const buf = await this.rec.stop();
+        document.getElementById('btnRecordMic').style.display = 'inline-block';
+        document.getElementById('btnStopRec').style.display = 'none';
+        if (buf) {
+            this.bm.set(buf);
+            this.bm.history = [this.bm.clone(buf)];
+            this.bm.idx = 0;
+            this.sel.setDur(buf.duration);
+            this.redraw();
+        }
+    }
+
+    play() {
+        if (!this.bm.buffer) return;
+        this.stop();
+        this.src = this.bm.ctx.createBufferSource();
+        this.src.buffer = this.bm.buffer;
+        this.src.connect(this.bm.ctx.destination);
+        const s = this.sel.has() ? Math.min(this.sel.s, this.sel.e) : 0;
+        const startCtx = this.bm.ctx.currentTime;
+        this.src.start(0, s);
+        const ph = document.getElementById('playhead'); 
+        ph.style.display = 'block';
+        const anim = () => {
+            if (!this.src) return;
+            const cur = s + (this.bm.ctx.currentTime - startCtx);
+            if (cur >= this.bm.buffer.duration) { 
+                this.stop(); 
+                return; 
+            }
+            ph.style.left = (cur / this.bm.buffer.duration) * 100 + '%';
+            this.time(cur);
+            requestAnimationFrame(anim);
+        };
+        anim();
+    }
+
+    stop() { 
+        if (this.src) { 
+            try {
+                this.src.stop();
+            } catch(e) {} 
+            this.src = null; 
+        } 
+        document.getElementById('playhead').style.display = 'none'; 
+    }
+
+    time(t) {
+        document.getElementById('timeDisplay').textContent = 
+            `${Math.floor(t / 60).toString().padStart(2, '0')}:${Math.floor(t % 60).toString().padStart(2, '0')}:${Math.floor((t % 1) * 1000).toString().padStart(3, '0')}`;
+    }
+
+    edit(op) {
+        if (!this.bm.buffer) return;
+        const buf = this.bm.buffer;
+        const r = this.sel.range(buf);
+        
+        if (op === 'copy') {
+            if (!this.sel.has()) return alert('Select audio first');
+            const len = r.end - r.start;
+            this.clip = this.bm.ctx.createBuffer(buf.numberOfChannels, len, buf.sampleRate);
+            for (let i = 0; i < buf.numberOfChannels; i++) this.clip.getChannelData(i).set(buf.getChannelData(i).subarray(r.start, r.end));
+            return;
+        }
+
+        if (op === 'paste') {
+            if (!this.clip) return alert('Nothing copied');
+            const ins = r.start;
+            const nB = this.bm.ctx.createBuffer(buf.numberOfChannels, buf.length + this.clip.length, buf.sampleRate);
+            for (let i = 0; i < buf.numberOfChannels; i++) {
+                const ch = nB.getChannelData(i);
+                const src = buf.getChannelData(i);
+                const clp = this.clip.getChannelData(Math.min(i, this.clip.numberOfChannels - 1));
+                ch.set(src.subarray(0, ins));
+                ch.set(clp, ins);
+                ch.set(src.subarray(ins), ins + this.clip.length);
+            }
+            this.bm.set(nB); 
+            this.sel.clear(); 
+            this.redraw();
+            return;
+        }
+
+        if (op === 'cut' || op === 'delete') {
+            if (!this.sel.has()) return alert('Select audio first');
+            const len = r.end - r.start;
+            if (op === 'cut') this.edit('copy');
+            const nB = this.bm.ctx.createBuffer(buf.numberOfChannels, buf.length - len, buf.sampleRate);
+            for (let i = 0; i < buf.numberOfChannels; i++) {
+                const ch = nB.getChannelData(i);
+                const src = buf.getChannelData(i);
+                ch.set(src.subarray(0, r.start));
+                ch.set(src.subarray(r.end), r.start);
+            }
+            this.bm.set(nB); 
+            this.sel.clear(); 
+            this.redraw();
+        }
+    }
+
+    reqEffect(name) {
+        if (!this.bm.buffer) return;
+        const needsParam = ['gain', 'hardlimiter', 'distortion', 'upsdowns', 'smartgain'];
+        if (needsParam.includes(name)) {
+            this.showModal(name);
+        } else {
+            this.apply(name);
+        }
+    }
+
+    showModal(name) {
+        const m = document.getElementById('effectModal');
+        const p = document.getElementById('modalParameters');
+        const t = document.getElementById('modalTitle');
+        this.currEff = name; 
+        m.style.display = 'flex'; 
+        p.innerHTML = '';
+        const sl = (id, min, max, val, step) => `<input type="range" id="${id}" min="${min}" max="${max}" value="${val}" step="${step}" oninput="this.nextElementSibling.innerText=this.value"><span>${val}</span>`;
+        
+        if (name === 'gain') { 
+            t.innerText = 'Gain'; 
+            p.innerHTML = `dB: ${sl('p1', -20, 20, 0, 1)}`; 
+        }
+        if (name === 'hardlimiter') { 
+            t.innerText = 'Hard Limiter'; 
+            p.innerHTML = `Threshold: ${sl('p1', 0.1, 1, 0.8, 0.05)}`; 
+        }
+        if (name === 'distortion') { 
+            t.innerText = 'Distortion'; 
+            p.innerHTML = `Amount: ${sl('p1', 0, 200, 50, 10)}`; 
+        }
+        if (name === 'upsdowns') {
+            t.innerText = 'Ups and Downs AI';
+            p.innerHTML = `Threshold: ${sl('p1', 0.1, 1.0, 0.8, 0.05)}`;
+        }
+        if (name === 'smartgain') {
+            t.innerText = 'Smart Gain AI';
+            p.innerHTML = `Target Level: ${sl('p1', 0.1, 1.0, 0.8, 0.05)}`;
+        }
+    }
+
+    closeModal() { 
+        document.getElementById('effectModal').style.display = 'none'; 
+        this.currEff = null; 
+    }
+
+    applyModalEffect() {
+        const v = parseFloat(document.getElementById('p1').value);
+        this.apply(this.currEff, v);
+        this.closeModal();
+    }
+
+    apply(eff, param) {
+        const buf = this.bm.buffer;
+        const rng = this.sel.has() ? this.sel.range(buf) : {start: 0, end: buf.length};
+        this.stop(); 
+        document.getElementById('loading').style.display = 'block';
+         
+        
+        setTimeout(() => {
+            console.log(rng,'rng,',param);
+            try {
+                if (eff === 'removesilence') {
+                    const nB = AudioEffects.removeSilence(this.bm.ctx, buf, 0.01, 0.3);
+                    this.bm.set(nB); 
+                    this.sel.clear();
+                } else {
+                    switch(eff) {
+                        case 'gain': AudioEffects.applyGain(buf, rng, param); break;
+                        case 'fadein': AudioEffects.applyFadeIn(buf, rng); break;
+                        case 'fadeout': AudioEffects.applyFadeOut(buf, rng); break;
+                        case 'normalize': AudioEffects.applyNormalize(buf, rng); break;
+                        case 'reverse': AudioEffects.applyReverse(buf, rng); break;
+                        case 'invert': AudioEffects.applyInvert(buf, rng); break;
+                        case 'hardlimiter': AudioEffects.applyHardLimiter(buf, rng, param); break;
+                        case 'distortion': AudioEffects.applyDistortion(buf, rng, param); break;
+                        case 'upsdowns': AudioEffects.applyUpsDownsAI(buf, rng, param); break;
+                        case 'smartgain': AudioEffects.applySmartGainAI(buf, rng, param); break;
+                        case 'gio': AudioEffects.applyGioAlgoritmo(buf, rng); break;
+                    }
+                    this.bm.pushState();
+                }
+                this.redraw();
+            } catch(e) { 
+                console.error(e); 
+            }
+            document.getElementById('loading').style.display = 'none';
+        }, 50);
+    }
+}
+
+let appInstance;
+
+function closeModalFunc() {
+    if (appInstance) appInstance.closeModal();
+}
+
+function applyModalEffectFunc() {
+    if (appInstance) appInstance.applyModalEffect();
+}
+
+window.onload = () => {
+    appInstance = new AppClass();
+};
+
+
+    </script>
+    
+</body>
+</html>
