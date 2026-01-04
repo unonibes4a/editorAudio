@@ -6,189 +6,189 @@
     <title>Professional Audio Editor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
     <style>
-        :root { 
-            --bg-dark: #1e1e1e; 
-            --bg-panel: #2d2d2d; 
-            --text-color: #e0e0e0; 
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-panel: #2d2d2d;
+            --text-color: #e0e0e0;
             --accent: #00bcd4;
             --selection: rgba(255, 255, 255, 0.2);
         }
         * { box-sizing: border-box; }
-        body { 
-            margin: 0; 
-            font-family: 'Segoe UI', sans-serif; 
-            background: var(--bg-dark); 
-            color: var(--text-color); 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            overflow: hidden; 
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
         }
-        .menubar { 
-            background: #333; 
-            padding: 5px 10px; 
-            display: flex; 
-            gap: 15px; 
-            border-bottom: 1px solid #444; 
-            font-size: 14px; 
+        .menubar {
+            background: #333;
+            padding: 5px 10px;
+            display: flex;
+            gap: 15px;
+            border-bottom: 1px solid #444;
+            font-size: 14px;
         }
-        .menu-item { 
-            cursor: pointer; 
-            position: relative; 
-            padding: 5px 10px; 
+        .menu-item {
+            cursor: pointer;
+            position: relative;
+            padding: 5px 10px;
         }
         .menu-item:hover { color: white; background: #444; }
-        .pk_menu { 
-            display: none; 
-            position: absolute; 
-            top: 100%; 
-            left: 0; 
-            background: #f0f0f0; 
-            min-width: 200px; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.5); 
-            z-index: 100; 
-            border: 1px solid #ccc; 
-            max-height: 500px; 
-            overflow-y: auto; 
+        .pk_menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: #f0f0f0;
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            z-index: 100;
+            border: 1px solid #ccc;
+            max-height: 500px;
+            overflow-y: auto;
         }
-        .pk_opt { 
-            width: 100%; 
-            text-align: left; 
-            background: none; 
-            border: none; 
-            padding: 10px 14px; 
-            cursor: pointer; 
-            font-size: 13px; 
-            color: black; 
-            border-bottom: 1px solid #ddd; 
+        .pk_opt {
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            color: black;
+            border-bottom: 1px solid #ddd;
         }
         .pk_opt:hover { background: #ddd; }
-        .toolbar { 
-            padding: 10px; 
-            background: var(--bg-panel); 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            border-bottom: 1px solid #444; 
-            flex-wrap: wrap; 
+        .toolbar {
+            padding: 10px;
+            background: var(--bg-panel);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #444;
+            flex-wrap: wrap;
         }
-        button.btn-tool { 
-            background: #444; 
-            border: 1px solid #555; 
-            color: white; 
-            padding: 6px 12px; 
-            cursor: pointer; 
-            border-radius: 3px; 
-            font-size: 13px; 
+        button.btn-tool {
+            background: #444;
+            border: 1px solid #555;
+            color: white;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 13px;
         }
         button.btn-tool:hover { background: #555; }
-        .time-display { 
-            font-family: monospace; 
-            font-size: 24px; 
-            background: black; 
-            color: var(--accent); 
-            padding: 5px 10px; 
-            border: 1px solid #555; 
+        .time-display {
+            font-family: monospace;
+            font-size: 24px;
+            background: black;
+            color: var(--accent);
+            padding: 5px 10px;
+            border: 1px solid #555;
         }
-        .editor-wrapper { 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
+        .editor-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        .timeline { 
-            height: 40px; 
-            background: #2a2a2a; 
-            border-bottom: 1px solid #444; 
+        .timeline {
+            height: 40px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #444;
             position: relative;
             overflow: hidden;
         }
-        .editor-container { 
-            flex-grow: 1; 
-            position: relative; 
-            overflow-x: auto; 
+        .editor-container {
+            flex-grow: 1;
+            position: relative;
+            overflow-x: auto;
             overflow-y: hidden;
-            background: black; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
+            background: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        .waveform-scroll { 
-            position: relative; 
-            height: 100%; 
+        .waveform-scroll {
+            position: relative;
+            height: 100%;
         }
-        .channel-wrapper { 
-            position: relative; 
-            height: 45%; 
-            min-width: 100%; 
-            border-bottom: 1px solid #444; 
-            margin-bottom: 5px; 
+        .channel-wrapper {
+            position: relative;
+            height: 45%;
+            min-width: 100%;
+            border-bottom: 1px solid #444;
+            margin-bottom: 5px;
         }
-        .channel-label { 
-            position: absolute; 
-            left: 5px; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            color: #006666; 
-            font-weight: bold; 
-            pointer-events: none; 
-            z-index: 1; 
+        .channel-label {
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #006666;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1;
         }
         canvas { display: block; width: 100%; height: 100%; }
-        .selection-overlay { 
-            position: absolute; 
-            top: 0; 
-            bottom: 0; 
-            background: var(--selection); 
-            pointer-events: none; 
-            display: none; 
-            border-left: 1px solid white; 
-            border-right: 1px solid white; 
+        .selection-overlay {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: var(--selection);
+            pointer-events: none;
+            display: none;
+            border-left: 1px solid white;
+            border-right: 1px solid white;
         }
-        .playhead { 
-            position: absolute; 
-            top: 0; 
-            bottom: 0; 
-            width: 2px; 
-            background: red; 
-            pointer-events: none; 
-            display: none; 
-            z-index: 10; 
+        .playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: red;
+            pointer-events: none;
+            display: none;
+            z-index: 10;
         }
-        #loading { 
-            position: fixed; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            background: rgba(0,0,0,0.9); 
-            padding: 20px 40px; 
-            border-radius: 8px; 
-            display: none; 
-            z-index: 999; 
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 20px 40px;
+            border-radius: 8px;
+            display: none;
+            z-index: 999;
         }
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.7); 
-            z-index: 1000; 
-            justify-content: center; 
-            align-items: center; 
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
         }
-        .modal-content { 
-            background: var(--bg-panel); 
-            padding: 25px; 
-            border-radius: 8px; 
-            width: 350px; 
+        .modal-content {
+            background: var(--bg-panel);
+            padding: 25px;
+            border-radius: 8px;
+            width: 350px;
         }
-        .modal-buttons { 
-            display: flex; 
-            gap: 10px; 
-            margin-top: 20px; 
-            justify-content: flex-end; 
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
         }
         input[type="range"] { width: 100%; margin: 10px 0; }
         .ruler-container {
@@ -259,6 +259,7 @@
     <button class="btn-tool" id="btnZoomFit">Fit</button>
     <button class="btn-tool" id="btnRecordMic">Record</button>
     <button class="btn-tool" id="btnStopRec" style="display:none">Stop Rec</button>
+    <button class="btn-tool" id="btnReverseAudio">Invertir Audio</button>
     <span style="flex-grow:1"></span>
     <button class="btn-tool" id="btnDownloadMp3" style="background: #006400;">Save MP3</button>
 </div>
@@ -286,8 +287,7 @@
     </div>
 </div>
 <script>
-    
-    class AudioEffects {
+class AudioEffects {
     static applyGain(buffer, range, db) {
         const amount = Math.pow(10, db / 20);
         this.process(buffer, range, (val) => Math.max(-1, Math.min(1, val * amount)));
@@ -429,7 +429,6 @@
             }
         }
     }
-
     static reverseAudioBuffer(audioContext, bufferToReverse) {
         const reversedBuffer = audioContext.createBuffer(
             bufferToReverse.numberOfChannels,
@@ -693,6 +692,7 @@ class AppClass {
         document.getElementById('btnDeselectAll').onclick = () => this.sel.clear();
         document.getElementById('btnRecordMic').onclick = () => this.startRec();
         document.getElementById('btnStopRec').onclick = () => this.stopRec();
+        document.getElementById('btnReverseAudio').onclick = () => this.apply('reverse');
         document.getElementById('btnDownloadMp3').onclick = () => { if (this.bm.buffer) new MP3Exp().save(this.bm.buffer, 'audio.mp3'); };
         document.getElementById('effectsMenuBtn').onclick = (e) => {
             e.stopPropagation();
@@ -759,94 +759,62 @@ class AppClass {
             if (placeNext) {
                 const reverseNew = confirm('Reverse the new audio?');
                 
-                // Si el usuario cancela la inversión y NO queremos que se una el audio sin invertir,
-                // entonces salimos de la función.
-                // Si preferimos que se una sin invertir en este caso, se quita este 'return'.
-                // Por ahora, asumimos que si CANCELA la inversión, es que CANCELA la unión en general.
-                if (!reverseNew && reverseNew !== null) { // confirm devuelve true/false
-                     // Ocultar el loading si ya se había mostrado
+                if (!reverseNew && reverseNew !== null) {
                     document.getElementById('loading').style.display = 'none';
-                    return; // Abortar la operación de "Place next"
+                    return;
                 }
-
                 document.getElementById('loading').style.display = 'block';
                 try {
                     let newBuf = await this.bm.ctx.decodeAudioData(await file.arrayBuffer());
                     const oldBuf = this.bm.buffer;
-
                     if (newBuf.sampleRate !== oldBuf.sampleRate) {
                         alert('Sample rates do not match. Audio may sound incorrect.');
-                        // Considerar un resampleo profesional aquí
                     }
-
                     if (reverseNew) {
                         newBuf = AudioEffects.reverseAudioBuffer(this.bm.ctx, newBuf);
                     }
-
-                    const oldLenSamples = oldBuf.length; // Longitud del buffer actual en muestras
-                    const newLenSamples = newBuf.length; // Longitud del nuevo buffer en muestras
-
-                    // Calcular el crossfade. Podría ser 0 para un pegado exacto si se desea.
-                    // Para evitar "espacios", es crucial que el crossfade se gestione como una superposición.
+                    const oldLenSamples = oldBuf.length;
+                    const newLenSamples = newBuf.length;
+                    const crossfadeDuration = 0.005;
                     const crossfadeSamples = Math.min(
-                        Math.floor(0.005 * oldBuf.sampleRate), // Por ejemplo, 5ms de crossfade
-                        oldLenSamples, // No puede ser más largo que el audio viejo
-                        newLenSamples  // No puede ser más largo que el audio nuevo
+                        Math.floor(crossfadeDuration * oldBuf.sampleRate),
+                        oldLenSamples,
+                        newLenSamples
                     );
-
-                    // La longitud total será el viejo + el nuevo - la superposición del crossfade
                     const combinedLenSamples = oldLenSamples + newLenSamples - crossfadeSamples;
                     const numChannels = Math.max(oldBuf.numberOfChannels, newBuf.numberOfChannels);
-
                     const combinedBuf = this.bm.ctx.createBuffer(numChannels, combinedLenSamples, oldBuf.sampleRate);
-
                     for (let ch = 0; ch < numChannels; ch++) {
                         const oldChData = oldBuf.getChannelData(Math.min(ch, oldBuf.numberOfChannels - 1));
                         const newChData = newBuf.getChannelData(Math.min(ch, newBuf.numberOfChannels - 1));
                         const combinedChData = combinedBuf.getChannelData(ch);
-
-                        // 1. Copiar la primera parte del audio viejo (antes del crossfade)
                         combinedChData.set(oldChData.subarray(0, oldLenSamples - crossfadeSamples), 0);
-
-                        // 2. Aplicar el crossfade (mezclar el final del viejo con el principio del nuevo)
-                        const crossfadeStartPos = oldLenSamples - crossfadeSamples;
+                        const writePosForCrossfade = oldLenSamples - crossfadeSamples;
                         for (let i = 0; i < crossfadeSamples; i++) {
-                            const oldSample = oldChData[crossfadeStartPos + i];
+                            const oldSample = oldChData[writePosForCrossfade + i];
                             const newSample = newChData[i];
-                            const fadeOut = 1 - (i / crossfadeSamples); // Fade out para el audio viejo
-                            const fadeIn = i / crossfadeSamples;     // Fade in para el audio nuevo
-                            combinedChData[crossfadeStartPos + i] = oldSample * fadeOut + newSample * fadeIn;
+                            const fadeOutFactor = 1 - (i / crossfadeSamples);
+                            const fadeInFactor = i / crossfadeSamples;
+                            combinedChData[writePosForCrossfade + i] = oldSample * fadeOutFactor + newSample * fadeInFactor;
                         }
-
-                        // 3. Copiar el resto del nuevo audio (después del crossfade)
-                        const remainingNewAudioStart = crossfadeSamples;
-                        const targetWritePos = oldLenSamples; // El punto donde el resto del nuevo audio se pega
-                        combinedChData.set(newChData.subarray(remainingNewAudioStart), targetWritePos);
+                        const writePosForRemainingNew = oldLenSamples;
+                        combinedChData.set(newChData.subarray(crossfadeSamples), writePosForRemainingNew);
                     }
-
                     this.bm.set(combinedBuf);
                     this.sel.setDur(combinedBuf.duration);
                     this.redraw();
-
                     const oldTime = (oldLenSamples / oldBuf.sampleRate).toFixed(3);
                     const newTime = (newLenSamples / newBuf.sampleRate).toFixed(3);
                     const totalTime = (combinedLenSamples / oldBuf.sampleRate).toFixed(3);
                     console.log(`Audio 1: ${oldTime}s, Audio 2: ${newTime}s${reverseNew ? ' (reversed)' : ''}, Total: ${totalTime}s`);
-
                 } catch(err) {
                     alert('Error loading file: ' + err.message);
                 }
                 document.getElementById('loading').style.display = 'none';
                 return;
             } else {
-                // Si el usuario CANCELA "Place this audio next...", no hacemos nada con la unión.
-                // El flujo de control continuará a la sección de "cargar un solo archivo".
-                // Si quieres que no pase NADA si placeNext es false (es decir, ni reemplazar el audio),
-                // entonces añadirías un 'return;' aquí y posiblemente ocultarías el loading.
             }
         }
-
-        // Lógica para cargar un solo archivo (cuando no hay buffer o placeNext fue false y no se abortó)
         document.getElementById('loading').style.display = 'block';
         try {
             const buf = await this.bm.ctx.decodeAudioData(await file.arrayBuffer());
