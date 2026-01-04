@@ -13,9 +13,7 @@
             --accent: #00bcd4;
             --selection: rgba(255, 255, 255, 0.2);
         }
-        * { 
-            box-sizing: border-box; 
-        }
+        * { box-sizing: border-box; }
         body { 
             margin: 0; 
             font-family: 'Segoe UI', sans-serif; 
@@ -39,10 +37,7 @@
             position: relative; 
             padding: 5px 10px; 
         }
-        .menu-item:hover { 
-            color: white; 
-            background: #444; 
-        }
+        .menu-item:hover { color: white; background: #444; }
         .pk_menu { 
             display: none; 
             position: absolute; 
@@ -67,9 +62,7 @@
             color: black; 
             border-bottom: 1px solid #ddd; 
         }
-        .pk_opt:hover { 
-            background: #ddd; 
-        }
+        .pk_opt:hover { background: #ddd; }
         .toolbar { 
             padding: 10px; 
             background: var(--bg-panel); 
@@ -88,9 +81,7 @@
             border-radius: 3px; 
             font-size: 13px; 
         }
-        button.btn-tool:hover { 
-            background: #555; 
-        }
+        button.btn-tool:hover { background: #555; }
         .time-display { 
             font-family: monospace; 
             font-size: 24px; 
@@ -143,11 +134,7 @@
             pointer-events: none; 
             z-index: 1; 
         }
-        canvas { 
-            display: block; 
-            width: 100%; 
-            height: 100%; 
-        }
+        canvas { display: block; width: 100%; height: 100%; }
         .selection-overlay { 
             position: absolute; 
             top: 0; 
@@ -203,10 +190,7 @@
             margin-top: 20px; 
             justify-content: flex-end; 
         }
-        input[type="range"] { 
-            width: 100%; 
-            margin: 10px 0; 
-        }
+        input[type="range"] { width: 100%; margin: 10px 0; }
         .ruler-container {
             position: absolute;
             top: 0;
@@ -224,24 +208,17 @@
         .time-label {
             position: absolute;
             top: 2px;
-            font-size: 10px;
+            font-size: 17px;
             color: #aaa;
             font-family: monospace;
             white-space: nowrap;
             transform: translateX(-50%);
         }
-        .time-marker.major {
-            border-left-width: 2px;
-            border-color: #888;
-        }
-        .time-marker.minor {
-            height: 50%;
-            top: 50%;
-        }
+        .time-marker.major { border-left-width: 2px; border-color: #888; }
+        .time-marker.minor { height: 50%; top: 50%; }
     </style>
 </head>
 <body>
-
 <div class="menubar">
     <div class="menu-item" onclick="document.getElementById('fileInput').click()">Open
         <input type="file" id="fileInput" accept="audio/*, video/mp4" style="display:none;">
@@ -264,7 +241,6 @@
         </div>
     </div>
 </div>
-
 <div class="toolbar">
     <div class="time-display" id="timeDisplay">00:00:000</div>
     <button class="btn-tool" id="btnPlay">Play</button>
@@ -286,7 +262,6 @@
     <span style="flex-grow:1"></span>
     <button class="btn-tool" id="btnDownloadMp3" style="background: #006400;">Save MP3</button>
 </div>
-
 <div class="editor-wrapper">
     <div class="timeline">
         <div class="ruler-container" id="rulerContainer"></div>
@@ -299,9 +274,7 @@
         </div>
     </div>
 </div>
-
 <div id="loading">Processing...</div>
-
 <div class="modal" id="effectModal">
     <div class="modal-content">
         <h3 id="modalTitle" style="margin-top:0">Parameters</h3>
@@ -312,16 +285,13 @@
         </div>
     </div>
 </div>
-
-<script> 
-
-
-class AudioEffects {
+<script>
+    
+    class AudioEffects {
     static applyGain(buffer, range, db) {
         const amount = Math.pow(10, db / 20);
         this.process(buffer, range, (val) => Math.max(-1, Math.min(1, val * amount)));
     }
-
     static applyFadeIn(buffer, range) {
         const len = range.end - range.start;
         for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
@@ -331,7 +301,6 @@ class AudioEffects {
             }
         }
     }
-
     static applyFadeOut(buffer, range) {
         const len = range.end - range.start;
         for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
@@ -341,7 +310,6 @@ class AudioEffects {
             }
         }
     }
-
     static applyNormalize(buffer, range) {
         let max = 0;
         for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
@@ -355,7 +323,6 @@ class AudioEffects {
             this.process(buffer, range, (val) => val * factor);
         }
     }
-
     static applyReverse(buffer, range) {
         for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
             const data = buffer.getChannelData(ch);
@@ -363,11 +330,9 @@ class AudioEffects {
             data.set(segment, range.start);
         }
     }
-
     static applyInvert(buffer, range) {
         this.process(buffer, range, (val) => -val);
     }
-
     static applyHardLimiter(buffer, range, threshold) {
         this.process(buffer, range, (val) => {
             if (val > threshold) return threshold;
@@ -375,42 +340,33 @@ class AudioEffects {
             return val;
         });
     }
-
     static applyDistortion(buffer, range, amount) {
         const k = amount;
         this.process(buffer, range, (x) => (1 + k) * x / (1 + k * Math.abs(x)));
     }
-
     static applyUpsDownsAI(buffer, range, threshold) {
         this.applyHardLimiter(buffer, range, threshold);
     }
-
     static applySmartGainAI(buffer, range, targetLevel) {
         const sampleRate = buffer.sampleRate;
         const segmentSize = Math.floor(0.1 * sampleRate);
-        
         for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
             const data = buffer.getChannelData(ch);
             let start = range.start;
             let end = range.end;
-
             for (let i = start; i < end; i += segmentSize) {
                 let segmentEnd = Math.min(i + segmentSize, end);
-                
                 let maxPeak = 0;
                 for (let j = i; j < segmentEnd; j++) {
                     let val = Math.abs(data[j]);
                     if (val > maxPeak) maxPeak = val;
                 }
-
                 let gain = 1.0;
                 if (maxPeak > 0.001) {
                     gain = targetLevel / maxPeak;
                 }
-
-                if (gain > 6.0) gain = 6.0; 
-                if (gain < 0.1) gain = 0.1; 
-
+                if (gain > 6.0) gain = 6.0;
+                if (gain < 0.1) gain = 0.1;
                 for (let j = i; j < segmentEnd; j++) {
                     let newVal = data[j] * gain;
                     data[j] = Math.max(-1, Math.min(1, newVal));
@@ -418,23 +374,16 @@ class AudioEffects {
             }
         }
     }
-
     static applyGioAlgoritmo(buffer, range) {
- 
-     for (var i =0; i<4; i++){
-        AudioEffects.applyUpsDownsAI(buffer, range, 0.2);
-     AudioEffects.applyGain(buffer, range, 2);
-     }
-      
+        AudioEffects.applyUpsDownsAI(buffer, range, 0.45);
+        AudioEffects.applySmartGainAI(buffer, range, 0.4);
     }
-
     static removeSilence(audioContext, buffer, threshold, minDuration) {
         const sampleRate = buffer.sampleRate;
         const minSamples = minDuration * sampleRate;
         const regions = [];
         let silenceStart = -1;
         let inSilence = false;
-
         for (let i = 0; i < buffer.length; i++) {
             let isSilent = true;
             for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
@@ -453,16 +402,12 @@ class AudioEffects {
                 inSilence = false;
             }
         }
-
         if (regions.length === 0) return buffer;
-
         let newLen = buffer.length;
         regions.forEach(r => newLen -= (r.end - r.start));
-        
         const newBuffer = audioContext.createBuffer(buffer.numberOfChannels, newLen, sampleRate);
         let writePos = 0;
         let readPos = 0;
-
         regions.forEach(r => {
             const len = r.start - readPos;
             for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
@@ -471,13 +416,11 @@ class AudioEffects {
             writePos += len;
             readPos = r.end;
         });
-
         for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
             newBuffer.getChannelData(ch).set(buffer.getChannelData(ch).subarray(readPos), writePos);
         }
         return newBuffer;
     }
-
     static process(buffer, range, callback) {
         for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
             const data = buffer.getChannelData(ch);
@@ -486,8 +429,23 @@ class AudioEffects {
             }
         }
     }
-}
 
+    static reverseAudioBuffer(audioContext, bufferToReverse) {
+        const reversedBuffer = audioContext.createBuffer(
+            bufferToReverse.numberOfChannels,
+            bufferToReverse.length,
+            bufferToReverse.sampleRate
+        );
+        for (let ch = 0; ch < bufferToReverse.numberOfChannels; ch++) {
+            const originalData = bufferToReverse.getChannelData(ch);
+            const reversedData = reversedBuffer.getChannelData(ch);
+            for (let i = 0; i < originalData.length; i++) {
+                reversedData[i] = originalData[originalData.length - 1 - i];
+            }
+        }
+        return reversedBuffer;
+    }
+}
 class BufferManager {
     constructor() {
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -506,21 +464,21 @@ class BufferManager {
         this.history.push(this.clone(this.buffer));
         if (this.history.length > this.maxHistory) this.history.shift(); else this.idx++;
     }
-    undo() { 
-        if (this.idx > 0) { 
-            this.idx--; 
-            this.buffer = this.clone(this.history[this.idx]); 
-            return true; 
-        } 
-        return false; 
+    undo() {
+        if (this.idx > 0) {
+            this.idx--;
+            this.buffer = this.clone(this.history[this.idx]);
+            return true;
+        }
+        return false;
     }
-    redo() { 
-        if (this.idx < this.history.length - 1) { 
-            this.idx++; 
-            this.buffer = this.clone(this.history[this.idx]); 
-            return true; 
-        } 
-        return false; 
+    redo() {
+        if (this.idx < this.history.length - 1) {
+            this.idx++;
+            this.buffer = this.clone(this.history[this.idx]);
+            return true;
+        }
+        return false;
     }
     clone(buf) {
         const res = this.ctx.createBuffer(buf.numberOfChannels, buf.length, buf.sampleRate);
@@ -528,13 +486,12 @@ class BufferManager {
         return res;
     }
 }
-
 class Renderer {
-    constructor(cL, cR, rulerContainer) { 
-        this.cL = cL; 
-        this.cR = cR; 
+    constructor(cL, cR, rulerContainer) {
+        this.cL = cL;
+        this.cR = cR;
         this.rulerContainer = rulerContainer;
-        this.zoom = 1.0; 
+        this.zoom = 1.0;
     }
     draw(buf) {
         if (!buf) return;
@@ -545,40 +502,35 @@ class Renderer {
     drawCh(data, cvs) {
         const w = Math.floor(cvs.parentElement.parentElement.clientWidth * this.zoom);
         const h = cvs.parentElement.clientHeight;
-        cvs.width = w; 
-        cvs.height = h; 
+        cvs.width = w;
+        cvs.height = h;
         cvs.style.width = w + 'px';
         const ctx = cvs.getContext('2d');
-        ctx.fillStyle = 'black'; 
+        ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, w, h);
-        ctx.beginPath(); 
+        ctx.beginPath();
         ctx.strokeStyle = '#00bcd4';
         const step = Math.max(1, Math.ceil(data.length / w));
         const amp = h / 2;
-        
         for (let i = 0; i < w; i++) {
             let min = 0, max = 0;
             const startIdx = i * step;
             const endIdx = Math.min(startIdx + step, data.length);
-            
             for (let j = startIdx; j < endIdx; j++) {
                 const v = data[j] || 0;
-                if (v < min) min = v; 
+                if (v < min) min = v;
                 if (v > max) max = v;
             }
-            
             const y1 = (1 - min) * amp;
             const y2 = (1 - max) * amp;
-            
-            ctx.moveTo(i, y1); 
+            ctx.moveTo(i, y1);
             ctx.lineTo(i, y2);
         }
         ctx.stroke();
-        
-        ctx.strokeStyle = '#333'; 
-        ctx.beginPath(); 
-        ctx.moveTo(0, amp); 
-        ctx.lineTo(w, amp); 
+        ctx.strokeStyle = '#333';
+        ctx.beginPath();
+        ctx.moveTo(0, amp);
+        ctx.lineTo(w, amp);
         ctx.stroke();
     }
     drawRuler(dur) {
@@ -586,10 +538,8 @@ class Renderer {
         const containerWidth = this.rulerContainer.parentElement.clientWidth;
         const w = Math.floor(containerWidth * this.zoom);
         this.rulerContainer.style.width = w + 'px';
-        
         const ppt = w / dur;
         let major, minor;
-        
         if (ppt >= 800) { major = 0.1; minor = 0.01; }
         else if (ppt >= 300) { major = 0.5; minor = 0.1; }
         else if (ppt >= 100) { major = 1; minor = 0.2; }
@@ -598,17 +548,14 @@ class Renderer {
         else if (ppt >= 8) { major = 10; minor = 2; }
         else if (ppt >= 3) { major = 30; minor = 10; }
         else { major = 60; minor = 30; }
-        
         for (let t = 0; t <= dur; t += minor) {
             const time = Math.round(t / minor) * minor;
             if (time > dur) break;
             const x = (time / dur) * w;
             const isMajor = Math.abs(time % major) < (minor / 2);
-            
             const marker = document.createElement('div');
             marker.className = isMajor ? 'time-marker major' : 'time-marker minor';
             marker.style.left = x + 'px';
-            
             if (isMajor) {
                 const label = document.createElement('div');
                 label.className = 'time-label';
@@ -616,7 +563,6 @@ class Renderer {
                 const m = Math.floor(time / 60);
                 const s = Math.floor(time % 60);
                 const ms = Math.floor((time % 1) * 100);
-                
                 if (major < 1) {
                     label.textContent = `${m}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
                 } else {
@@ -628,28 +574,19 @@ class Renderer {
         }
     }
 }
-
 class Selection {
-    constructor(ct, oL, oR) { 
-        this.ct = ct; 
-        this.oL = oL; 
-        this.oR = oR; 
-        this.s = 0; 
-        this.e = 0; 
-        this.active = false; 
-        this.dur = 0; 
+    constructor(ct, oL, oR) {
+        this.ct = ct;
+        this.oL = oL;
+        this.oR = oR;
+        this.s = 0;
+        this.e = 0;
+        this.active = false;
+        this.dur = 0;
     }
-    setDur(d) { 
-        this.dur = d; 
-    }
-    has() { 
-        return Math.abs(this.e - this.s) > 0.001; 
-    }
-    clear() { 
-        this.s = 0; 
-        this.e = 0; 
-        this.ui(); 
-    }
+    setDur(d) { this.dur = d; }
+    has() { return Math.abs(this.e - this.s) > 0.001; }
+    clear() { this.s = 0; this.e = 0; this.ui(); }
     range(buf) {
         const s = Math.floor(Math.min(this.s, this.e) * buf.sampleRate);
         const e = Math.floor(Math.max(this.s, this.e) * buf.sampleRate);
@@ -666,17 +603,16 @@ class Selection {
         this.oL.style.width = this.oR.style.width = W + '%';
     }
 }
-
 class MP3Exp {
     save(buf, name) {
         const enc = new lamejs.Mp3Encoder(buf.numberOfChannels, buf.sampleRate, 128);
         const d = [];
         const L = buf.getChannelData(0);
         const R = buf.numberOfChannels > 1 ? buf.getChannelData(1) : L;
-        const cvt = (arr) => { 
-            const r = new Int16Array(arr.length); 
-            for (let i = 0; i < arr.length; i++) r[i] = Math.max(-1, Math.min(1, arr[i])) * (arr[i] < 0 ? 0x8000 : 0x7FFF); 
-            return r; 
+        const cvt = (arr) => {
+            const r = new Int16Array(arr.length);
+            for (let i = 0; i < arr.length; i++) r[i] = Math.max(-1, Math.min(1, arr[i])) * (arr[i] < 0 ? 0x8000 : 0x7FFF);
+            return r;
         };
         const blockSize = 11520;
         for (let i = 0; i < buf.length; i += blockSize) {
@@ -685,17 +621,16 @@ class MP3Exp {
             const mp3 = buf.numberOfChannels === 1 ? enc.encodeBuffer(l) : enc.encodeBuffer(l, r);
             if (mp3.length) d.push(mp3);
         }
-        const end = enc.flush(); 
+        const end = enc.flush();
         if (end.length) d.push(end);
         const b = new Blob(d, {type: 'audio/mp3'});
         const url = URL.createObjectURL(b);
         const a = document.createElement('a');
-        a.href = url; 
-        a.download = name; 
+        a.href = url;
+        a.download = name;
         a.click();
     }
 }
-
 class Recorder {
     constructor(ctx) {
         this.ctx = ctx;
@@ -712,8 +647,8 @@ class Recorder {
             this.recorder.ondataavailable = e => this.chunks.push(e.data);
             this.recorder.start();
             this.recording = true;
-        } catch(e) { 
-            alert('Error accessing microphone'); 
+        } catch(e) {
+            alert('Error accessing microphone');
         }
     }
     async stop() {
@@ -730,15 +665,10 @@ class Recorder {
         });
     }
 }
-
 class AppClass {
     constructor() {
         this.bm = new BufferManager();
-        this.rend = new Renderer(
-            document.getElementById('canvasL'), 
-            document.getElementById('canvasR'),
-            document.getElementById('rulerContainer')
-        );
+        this.rend = new Renderer(document.getElementById('canvasL'), document.getElementById('canvasR'), document.getElementById('rulerContainer'));
         this.sel = new Selection(document.getElementById('waveformScroll'), document.getElementById('selL'), document.getElementById('selR'));
         this.clip = null;
         this.src = null;
@@ -746,14 +676,13 @@ class AppClass {
         this.currEff = null;
         this.bind();
     }
-
     bind() {
         document.getElementById('fileInput').onchange = e => this.load(e);
         document.getElementById('btnPlay').onclick = () => this.play();
         document.getElementById('btnStop').onclick = () => this.stop();
         document.getElementById('btnZoomIn').onclick = () => this.zoom(1.5);
         document.getElementById('btnZoomOut').onclick = () => this.zoom(0.6);
-        document.getElementById('btnZoomFit').onclick =() => { this.rend.zoom = 1; this.redraw(); };
+        document.getElementById('btnZoomFit').onclick = () => { this.rend.zoom = 1; this.redraw(); };
         document.getElementById('btnUndo').onclick = () => { if (this.bm.undo()) this.redraw(); };
         document.getElementById('btnRedo').onclick = () => { if (this.bm.redo()) this.redraw(); };
         document.getElementById('btnCut').onclick = () => this.edit('cut');
@@ -765,15 +694,13 @@ class AppClass {
         document.getElementById('btnRecordMic').onclick = () => this.startRec();
         document.getElementById('btnStopRec').onclick = () => this.stopRec();
         document.getElementById('btnDownloadMp3').onclick = () => { if (this.bm.buffer) new MP3Exp().save(this.bm.buffer, 'audio.mp3'); };
-        
         document.getElementById('effectsMenuBtn').onclick = (e) => {
             e.stopPropagation();
-            const d = document.getElementById('effectsDropdown'); 
+            const d = document.getElementById('effectsDropdown');
             d.style.display = d.style.display == 'block' ? 'none' : 'block';
         };
         document.addEventListener('click', () => document.getElementById('effectsDropdown').style.display = 'none');
         document.querySelectorAll('[data-effect]').forEach(b => b.onclick = (e) => this.reqEffect(e.target.dataset.effect));
-
         document.body.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; };
         document.body.ondrop = async e => {
             e.preventDefault();
@@ -785,7 +712,6 @@ class AppClass {
                 }
             }
         };
-
         const c = this.sel.ct;
         c.onmousedown = e => {
             if (!this.bm.buffer) return;
@@ -801,124 +727,143 @@ class AppClass {
                 const t = this.bm.buffer.duration;
                 let x = e.clientX - r.left + document.getElementById('editorContainer').scrollLeft;
                 this.sel.e = Math.max(0, Math.min(t, (x / c.clientWidth) * t));
-                this.sel.ui(); 
+                this.sel.ui();
                 this.time(this.sel.e);
             }
         };
         window.onmouseup = () => this.sel.active = false;
-
         document.addEventListener('keydown', e => {
-            if (e.ctrlKey && e.key === 'z') { 
-                e.preventDefault(); 
-                if (this.bm.undo()) this.redraw(); 
-            }
-            if (e.ctrlKey && e.key === 'y') { 
-                e.preventDefault(); 
-                if (this.bm.redo()) this.redraw(); 
-            }
-            if (e.ctrlKey && e.key === 'c') { 
-                e.preventDefault(); 
-                this.edit('copy'); 
-            }
-            if (e.ctrlKey && e.key === 'v') { 
-                e.preventDefault(); 
-                this.edit('paste'); 
-            }
-            if (e.ctrlKey && e.key === 'x') { 
-                e.preventDefault(); 
-                this.edit('cut'); 
-            }
-            if (e.key === 'Delete') { 
-                e.preventDefault(); 
-                this.edit('delete'); 
-            }
-            if (e.ctrlKey && e.key === 'a') { 
-                e.preventDefault(); 
-                this.selectAll(); 
-            }
+            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); if (this.bm.undo()) this.redraw(); }
+            if (e.ctrlKey && e.key === 'y') { e.preventDefault(); if (this.bm.redo()) this.redraw(); }
+            if (e.ctrlKey && e.key === 'c') { e.preventDefault(); this.edit('copy'); }
+            if (e.ctrlKey && e.key === 'v') { e.preventDefault(); this.edit('paste'); }
+            if (e.ctrlKey && e.key === 'x') { e.preventDefault(); this.edit('cut'); }
+            if (e.key === 'Delete') { e.preventDefault(); this.edit('delete'); }
+            if (e.ctrlKey && e.key === 'a') { e.preventDefault(); this.selectAll(); }
         });
-
         document.getElementById('editorContainer').addEventListener('wheel', e => {
             if (e.ctrlKey) {
                 e.preventDefault();
                 this.zoom(e.deltaY < 0 ? 1.2 : 0.8);
             }
         });
-
-        document.getElementById('editorContainer').addEventListener('scroll', () => {
-            this.syncRulerScroll();
-        });
+        document.getElementById('editorContainer').addEventListener('scroll', () => { this.syncRulerScroll(); });
     }
-
     syncRulerScroll() {
         const scrollLeft = document.getElementById('editorContainer').scrollLeft;
         document.getElementById('rulerContainer').style.transform = `translateX(-${scrollLeft}px)`;
     }
-
     async loadFile(file) {
         if (this.bm.buffer) {
             const placeNext = confirm('Place this audio next to the current one?');
             if (placeNext) {
-                const invertNew = confirm('Invert the new audio?');
+                const reverseNew = confirm('Reverse the new audio?');
+                
+                // Si el usuario cancela la inversión y NO queremos que se una el audio sin invertir,
+                // entonces salimos de la función.
+                // Si preferimos que se una sin invertir en este caso, se quita este 'return'.
+                // Por ahora, asumimos que si CANCELA la inversión, es que CANCELA la unión en general.
+                if (!reverseNew && reverseNew !== null) { // confirm devuelve true/false
+                     // Ocultar el loading si ya se había mostrado
+                    document.getElementById('loading').style.display = 'none';
+                    return; // Abortar la operación de "Place next"
+                }
+
                 document.getElementById('loading').style.display = 'block';
                 try {
                     let newBuf = await this.bm.ctx.decodeAudioData(await file.arrayBuffer());
-                    
-                    if (invertNew) {
-                        for (let ch = 0; ch < newBuf.numberOfChannels; ch++) {
-                            const data = newBuf.getChannelData(ch);
-                            for (let i = 0; i < data.length; i++) {
-                                data[i] = -data[i];
-                            }
-                        }
-                    }
-                    
                     const oldBuf = this.bm.buffer;
-                    const totalLen = oldBuf.length + newBuf.length;
-                    const combinedBuf = this.bm.ctx.createBuffer(
-                        Math.max(oldBuf.numberOfChannels, newBuf.numberOfChannels),
-                        totalLen,
-                        oldBuf.sampleRate
-                    );
-                    
-                    for (let ch = 0; ch < combinedBuf.numberOfChannels; ch++) {
-                        const combined = combinedBuf.getChannelData(ch);
-                        const oldCh = oldBuf.getChannelData(Math.min(ch, oldBuf.numberOfChannels - 1));
-                        const newCh = newBuf.getChannelData(Math.min(ch, newBuf.numberOfChannels - 1));
-                        combined.set(oldCh, 0);
-                        combined.set(newCh, oldBuf.length);
+
+                    if (newBuf.sampleRate !== oldBuf.sampleRate) {
+                        alert('Sample rates do not match. Audio may sound incorrect.');
+                        // Considerar un resampleo profesional aquí
                     }
-                    
+
+                    if (reverseNew) {
+                        newBuf = AudioEffects.reverseAudioBuffer(this.bm.ctx, newBuf);
+                    }
+
+                    const oldLenSamples = oldBuf.length; // Longitud del buffer actual en muestras
+                    const newLenSamples = newBuf.length; // Longitud del nuevo buffer en muestras
+
+                    // Calcular el crossfade. Podría ser 0 para un pegado exacto si se desea.
+                    // Para evitar "espacios", es crucial que el crossfade se gestione como una superposición.
+                    const crossfadeSamples = Math.min(
+                        Math.floor(0.005 * oldBuf.sampleRate), // Por ejemplo, 5ms de crossfade
+                        oldLenSamples, // No puede ser más largo que el audio viejo
+                        newLenSamples  // No puede ser más largo que el audio nuevo
+                    );
+
+                    // La longitud total será el viejo + el nuevo - la superposición del crossfade
+                    const combinedLenSamples = oldLenSamples + newLenSamples - crossfadeSamples;
+                    const numChannels = Math.max(oldBuf.numberOfChannels, newBuf.numberOfChannels);
+
+                    const combinedBuf = this.bm.ctx.createBuffer(numChannels, combinedLenSamples, oldBuf.sampleRate);
+
+                    for (let ch = 0; ch < numChannels; ch++) {
+                        const oldChData = oldBuf.getChannelData(Math.min(ch, oldBuf.numberOfChannels - 1));
+                        const newChData = newBuf.getChannelData(Math.min(ch, newBuf.numberOfChannels - 1));
+                        const combinedChData = combinedBuf.getChannelData(ch);
+
+                        // 1. Copiar la primera parte del audio viejo (antes del crossfade)
+                        combinedChData.set(oldChData.subarray(0, oldLenSamples - crossfadeSamples), 0);
+
+                        // 2. Aplicar el crossfade (mezclar el final del viejo con el principio del nuevo)
+                        const crossfadeStartPos = oldLenSamples - crossfadeSamples;
+                        for (let i = 0; i < crossfadeSamples; i++) {
+                            const oldSample = oldChData[crossfadeStartPos + i];
+                            const newSample = newChData[i];
+                            const fadeOut = 1 - (i / crossfadeSamples); // Fade out para el audio viejo
+                            const fadeIn = i / crossfadeSamples;     // Fade in para el audio nuevo
+                            combinedChData[crossfadeStartPos + i] = oldSample * fadeOut + newSample * fadeIn;
+                        }
+
+                        // 3. Copiar el resto del nuevo audio (después del crossfade)
+                        const remainingNewAudioStart = crossfadeSamples;
+                        const targetWritePos = oldLenSamples; // El punto donde el resto del nuevo audio se pega
+                        combinedChData.set(newChData.subarray(remainingNewAudioStart), targetWritePos);
+                    }
+
                     this.bm.set(combinedBuf);
                     this.sel.setDur(combinedBuf.duration);
                     this.redraw();
+
+                    const oldTime = (oldLenSamples / oldBuf.sampleRate).toFixed(3);
+                    const newTime = (newLenSamples / newBuf.sampleRate).toFixed(3);
+                    const totalTime = (combinedLenSamples / oldBuf.sampleRate).toFixed(3);
+                    console.log(`Audio 1: ${oldTime}s, Audio 2: ${newTime}s${reverseNew ? ' (reversed)' : ''}, Total: ${totalTime}s`);
+
                 } catch(err) {
-                    alert('Error loading file');
+                    alert('Error loading file: ' + err.message);
                 }
                 document.getElementById('loading').style.display = 'none';
                 return;
+            } else {
+                // Si el usuario CANCELA "Place this audio next...", no hacemos nada con la unión.
+                // El flujo de control continuará a la sección de "cargar un solo archivo".
+                // Si quieres que no pase NADA si placeNext es false (es decir, ni reemplazar el audio),
+                // entonces añadirías un 'return;' aquí y posiblemente ocultarías el loading.
             }
         }
-        
+
+        // Lógica para cargar un solo archivo (cuando no hay buffer o placeNext fue false y no se abortó)
         document.getElementById('loading').style.display = 'block';
         try {
             const buf = await this.bm.ctx.decodeAudioData(await file.arrayBuffer());
-            this.bm.set(buf); 
-            this.bm.history = [this.bm.clone(buf)]; 
+            this.bm.set(buf);
+            this.bm.history = [this.bm.clone(buf)];
             this.bm.idx = 0;
-            this.sel.setDur(buf.duration); 
+            this.sel.setDur(buf.duration);
             this.redraw();
-        } catch(err) { 
-            alert('Error loading file'); 
+        } catch(err) {
+            alert('Error loading file');
         }
         document.getElementById('loading').style.display = 'none';
     }
-
     async load(e) {
         if (!e.target.files[0]) return;
         await this.loadFile(e.target.files[0]);
     }
-
     redraw() {
         if (!this.bm.buffer) return;
         this.sel.setDur(this.bm.buffer.duration);
@@ -927,25 +872,21 @@ class AppClass {
         document.getElementById('zoomLevel').textContent = Math.round(this.rend.zoom * 100) + '%';
         this.syncRulerScroll();
     }
-
-    zoom(f) { 
-        this.rend.zoom *= f; 
-        this.redraw(); 
+    zoom(f) {
+        this.rend.zoom *= f;
+        this.redraw();
     }
-
     selectAll() {
         if (!this.bm.buffer) return;
         this.sel.s = 0;
         this.sel.e = this.bm.buffer.duration;
         this.sel.ui();
     }
-
     async startRec() {
         await this.rec.start();
         document.getElementById('btnRecordMic').style.display = 'none';
         document.getElementById('btnStopRec').style.display = 'inline-block';
     }
-
     async stopRec() {
         const buf = await this.rec.stop();
         document.getElementById('btnRecordMic').style.display = 'inline-block';
@@ -958,7 +899,6 @@ class AppClass {
             this.redraw();
         }
     }
-
     play() {
         if (!this.bm.buffer) return;
         this.stop();
@@ -968,14 +908,14 @@ class AppClass {
         const s = this.sel.has() ? Math.min(this.sel.s, this.sel.e) : 0;
         const startCtx = this.bm.ctx.currentTime;
         this.src.start(0, s);
-        const ph = document.getElementById('playhead'); 
+        const ph = document.getElementById('playhead');
         ph.style.display = 'block';
         const anim = () => {
             if (!this.src) return;
             const cur = s + (this.bm.ctx.currentTime - startCtx);
-            if (cur >= this.bm.buffer.duration) { 
-                this.stop(); 
-                return; 
+            if (cur >= this.bm.buffer.duration) {
+                this.stop();
+                return;
             }
             ph.style.left = (cur / this.bm.buffer.duration) * 100 + '%';
             this.time(cur);
@@ -983,35 +923,29 @@ class AppClass {
         };
         anim();
     }
-
-    stop() { 
-        if (this.src) { 
-            try {
-                this.src.stop();
-            } catch(e) {} 
-            this.src = null; 
-        } 
-        document.getElementById('playhead').style.display = 'none'; 
+    stop() {
+        if (this.src) {
+            try { this.src.stop(); } catch(e) {}
+            this.src = null;
+        }
+        document.getElementById('playhead').style.display = 'none';
     }
-
     time(t) {
-        document.getElementById('timeDisplay').textContent = 
-            `${Math.floor(t / 60).toString().padStart(2, '0')}:${Math.floor(t % 60).toString().padStart(2, '0')}:${Math.floor((t % 1) * 1000).toString().padStart(3, '0')}`;
+        document.getElementById('timeDisplay').textContent = `${Math.floor(t / 60).toString().padStart(2, '0')}:${Math.floor(t % 60).toString().padStart(2, '0')}:${Math.floor((t % 1) * 1000).toString().padStart(3, '0')}`;
     }
-
     edit(op) {
         if (!this.bm.buffer) return;
         const buf = this.bm.buffer;
         const r = this.sel.range(buf);
-        
         if (op === 'copy') {
             if (!this.sel.has()) return alert('Select audio first');
             const len = r.end - r.start;
             this.clip = this.bm.ctx.createBuffer(buf.numberOfChannels, len, buf.sampleRate);
-            for (let i = 0; i < buf.numberOfChannels; i++) this.clip.getChannelData(i).set(buf.getChannelData(i).subarray(r.start, r.end));
+            for (let i = 0; i < buf.numberOfChannels; i++) {
+                this.clip.getChannelData(i).set(buf.getChannelData(i).subarray(r.start, r.end));
+            }
             return;
         }
-
         if (op === 'paste') {
             if (!this.clip) return alert('Nothing copied');
             const ins = r.start;
@@ -1020,16 +954,15 @@ class AppClass {
                 const ch = nB.getChannelData(i);
                 const src = buf.getChannelData(i);
                 const clp = this.clip.getChannelData(Math.min(i, this.clip.numberOfChannels - 1));
-                ch.set(src.subarray(0, ins));
+                ch.set(src.subarray(0, ins), 0);
                 ch.set(clp, ins);
                 ch.set(src.subarray(ins), ins + this.clip.length);
             }
-            this.bm.set(nB); 
-            this.sel.clear(); 
+            this.bm.set(nB);
+            this.sel.clear();
             this.redraw();
             return;
         }
-
         if (op === 'cut' || op === 'delete') {
             if (!this.sel.has()) return alert('Select audio first');
             const len = r.end - r.start;
@@ -1038,15 +971,14 @@ class AppClass {
             for (let i = 0; i < buf.numberOfChannels; i++) {
                 const ch = nB.getChannelData(i);
                 const src = buf.getChannelData(i);
-                ch.set(src.subarray(0, r.start));
+                ch.set(src.subarray(0, r.start), 0);
                 ch.set(src.subarray(r.end), r.start);
             }
-            this.bm.set(nB); 
-            this.sel.clear(); 
+            this.bm.set(nB);
+            this.sel.clear();
             this.redraw();
         }
     }
-
     reqEffect(name) {
         if (!this.bm.buffer) return;
         const needsParam = ['gain', 'hardlimiter', 'distortion', 'upsdowns', 'smartgain'];
@@ -1056,62 +988,39 @@ class AppClass {
             this.apply(name);
         }
     }
-
     showModal(name) {
         const m = document.getElementById('effectModal');
         const p = document.getElementById('modalParameters');
         const t = document.getElementById('modalTitle');
-        this.currEff = name; 
-        m.style.display = 'flex'; 
+        this.currEff = name;
+        m.style.display = 'flex';
         p.innerHTML = '';
         const sl = (id, min, max, val, step) => `<input type="range" id="${id}" min="${min}" max="${max}" value="${val}" step="${step}" oninput="this.nextElementSibling.innerText=this.value"><span>${val}</span>`;
-        
-        if (name === 'gain') { 
-            t.innerText = 'Gain'; 
-            p.innerHTML = `dB: ${sl('p1', -20, 20, 0, 1)}`; 
-        }
-        if (name === 'hardlimiter') { 
-            t.innerText = 'Hard Limiter'; 
-            p.innerHTML = `Threshold: ${sl('p1', 0.1, 1, 0.8, 0.05)}`; 
-        }
-        if (name === 'distortion') { 
-            t.innerText = 'Distortion'; 
-            p.innerHTML = `Amount: ${sl('p1', 0, 200, 50, 10)}`; 
-        }
-        if (name === 'upsdowns') {
-            t.innerText = 'Ups and Downs AI';
-            p.innerHTML = `Threshold: ${sl('p1', 0.1, 1.0, 0.8, 0.05)}`;
-        }
-        if (name === 'smartgain') {
-            t.innerText = 'Smart Gain AI';
-            p.innerHTML = `Target Level: ${sl('p1', 0.1, 1.0, 0.8, 0.05)}`;
-        }
+        if (name === 'gain') { t.innerText = 'Gain'; p.innerHTML = `dB: ${sl('p1', -20, 20, 0, 1)}`; }
+        if (name === 'hardlimiter') { t.innerText = 'Hard Limiter'; p.innerHTML = `Threshold: ${sl('p1', 0.1, 1, 0.8, 0.05)}`; }
+        if (name === 'distortion') { t.innerText = 'Distortion'; p.innerHTML = `Amount: ${sl('p1', 0, 200, 50, 10)}`; }
+        if (name === 'upsdowns') { t.innerText = 'Ups and Downs AI'; p.innerHTML = `Threshold: ${sl('p1', 0.1, 1.0, 0.8, 0.05)}`; }
+        if (name === 'smartgain') { t.innerText = 'Smart Gain AI'; p.innerHTML = `Target Level: ${sl('p1', 0.1, 1.0, 0.8, 0.05)}`; }
     }
-
-    closeModal() { 
-        document.getElementById('effectModal').style.display = 'none'; 
-        this.currEff = null; 
+    closeModal() {
+        document.getElementById('effectModal').style.display = 'none';
+        this.currEff = null;
     }
-
     applyModalEffect() {
         const v = parseFloat(document.getElementById('p1').value);
         this.apply(this.currEff, v);
         this.closeModal();
     }
-
     apply(eff, param) {
         const buf = this.bm.buffer;
         const rng = this.sel.has() ? this.sel.range(buf) : {start: 0, end: buf.length};
-        this.stop(); 
+        this.stop();
         document.getElementById('loading').style.display = 'block';
-         
-        
         setTimeout(() => {
-            console.log(rng,'rng,',param);
             try {
                 if (eff === 'removesilence') {
                     const nB = AudioEffects.removeSilence(this.bm.ctx, buf, 0.01, 0.3);
-                    this.bm.set(nB); 
+                    this.bm.set(nB);
                     this.sel.clear();
                 } else {
                     switch(eff) {
@@ -1130,30 +1039,21 @@ class AppClass {
                     this.bm.pushState();
                 }
                 this.redraw();
-            } catch(e) { 
-                console.error(e); 
-            }
+            } catch(e) {}
             document.getElementById('loading').style.display = 'none';
         }, 50);
     }
 }
-
 let appInstance;
-
 function closeModalFunc() {
     if (appInstance) appInstance.closeModal();
 }
-
 function applyModalEffectFunc() {
     if (appInstance) appInstance.applyModalEffect();
 }
-
 window.onload = () => {
     appInstance = new AppClass();
 };
-
-
-    </script>
-    
+</script>
 </body>
 </html>
